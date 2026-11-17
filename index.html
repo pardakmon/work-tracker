@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>근태 기록</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h2>근태 상태 기록</h2>
+        
+        <div class="btn-grid">
+            <button id="btn-return" class="btn blue">업무 시작 / 자리 복귀</button>
+            <button id="btn-bed" class="btn red">대기실 누움</button>
+            <button id="btn-avoid" class="btn orange">전화 회피</button>
+            <button id="btn-out" class="btn gray">외출 / 기타 이탈</button>
+        </div>
+
+        <div id="log-area">
+            <h3>오늘의 타임라인</h3>
+            <ul id="log-list">
+                <li>기록을 불러오는 중...</li>
+            </ul>
+        </div>
+    </div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>
