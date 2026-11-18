@@ -37,7 +37,7 @@ function getCurrentTimeString() {
   return `${hours}:${minutes}:${seconds}`;
 }
 
-// 1. 카메라 촬영 및 이미지 자동 압축 (DB 용량 절약용)
+// 1. 카메라 촬영, 리사이징 및 날짜/시간 워터마크 삽입
 const cameraInput = document.getElementById('camera-input');
 const btnCamera = document.getElementById('btn-camera');
 const previewContainer = document.getElementById('preview-container');
@@ -54,7 +54,7 @@ cameraInput.addEventListener('change', (e) => {
   reader.onload = (event) => {
     const img = new Image();
     img.onload = () => {
-      // 가로 최대 500px로 리사이징 및 JPEG 압축
+      // 가로 최대 500px로 리사이징
       const canvas = document.createElement('canvas');
       const maxWidth = 500;
       const scale = maxWidth / img.width;
@@ -63,6 +63,28 @@ cameraInput.addEventListener('change', (e) => {
 
       const ctx = canvas.getContext('2d');
       ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
+      // 사진 우측 하단에 날짜 및 시간 타임스탬프 새기기
+      const timestampText = `${getTodayDateString()} ${getCurrentTimeString()}`;
+      const fontSize = Math.max(14, Math.floor(canvas.width * 0.036));
+      ctx.font = `bold ${fontSize}px sans-serif`;
+      
+      const textMetrics = ctx.measureText(timestampText);
+      const paddingX = 10;
+      const paddingY = 6;
+      const boxWidth = textMetrics.width + paddingX * 2;
+      const boxHeight = fontSize + paddingY * 2;
+      const boxX = canvas.width - boxWidth - 10;
+      const boxY = canvas.height - boxHeight - 10;
+
+      // 가독성을 위한 반투명 검은색 배경 박스
+      ctx.fillStyle = "rgba(0, 0, 0, 0.65)";
+      ctx.fillRect(boxX, boxY, boxWidth, boxHeight);
+
+      // 흰색 날짜/시간 글씨
+      ctx.fillStyle = "#ffffff";
+      ctx.textBaseline = "middle";
+      ctx.fillText(timestampText, boxX + paddingX, boxY + boxHeight / 2);
       
       currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.65);
       photoPreview.src = currentPhotoBase64;
@@ -82,7 +104,7 @@ function clearPhoto() {
 
 btnClearPhoto.addEventListener('click', clearPhoto);
 
-// 2. 기록 저장 함수 (사진이 첨부되어 있으면 함께 저장)
+// 2. 기록 저장 함수
 function recordAction(actionName) {
   const today = getTodayDateString();
   const logRef = ref(db, `attendance_log/${today}`);
@@ -99,8 +121,7 @@ function recordAction(actionName) {
 
   push(logRef, payload)
     .then(() => {
-      clearPhoto(); // 저장 후 첨부된 사진 초기화
-      // 오늘 날짜를 보고 있지 않았다면 오늘 날짜로 자동 전환
+      clearPhoto();
       if (datePicker.value !== today) {
         datePicker.value = today;
         loadLogsByDate(today);
@@ -121,7 +142,6 @@ const datePicker = document.getElementById('date-picker');
 const logListEl = document.getElementById('log-list');
 
 function loadLogsByDate(selectedDate) {
-  // 기존 날짜 리스너 해제
   if (currentListeningRef) {
     off(currentListeningRef);
   }
@@ -138,7 +158,6 @@ function loadLogsByDate(selectedDate) {
       return;
     }
 
-    // 시간순 배열 저장 (엑셀 다운로드용) 및 화면 표시용 역순 정렬
     const rawEntries = Object.values(data);
     currentLogsArray = rawEntries;
     const displayEntries = [...rawEntries].reverse();
@@ -157,7 +176,6 @@ function loadLogsByDate(selectedDate) {
   });
 }
 
-// 초기 실행 시 오늘 날짜 세팅 및 데이터 로드
 const initialDate = getTodayDateString();
 datePicker.value = initialDate;
 loadLogsByDate(initialDate);
@@ -176,7 +194,6 @@ document.getElementById('btn-export').addEventListener('click', () => {
     return;
   }
 
-  // 한글 깨짐 방지를 위한 BOM(\uFEFF) 추가
   let csvContent = "\uFEFF날짜,시간,상태,사진첨부여부\n";
   
   currentLogsArray.forEach((item) => {
